@@ -1,5 +1,6 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
+const puppeteer = require('puppeteer'); // اضافه شده برای پیدا کردن مسیر مرورگر
 
 // --- تنظیمات ---
 const CONFIG = {
@@ -19,9 +20,11 @@ const client = new Client({
             '--disable-setuid-sandbox', 
             '--disable-gpu',
             '--no-zygote',
-            '--single-process', // برای کاهش مصرف رم در Render حیاتی است
+            '--single-process', 
             '--disable-dev-shm-usage'
-        ]
+        ],
+        // این خط مهم است: مسیر مرورگر را خودکار پیدا می‌کند
+        executablePath: puppeteer.executablePath()
     }
 });
 
@@ -113,5 +116,4 @@ process.on('uncaughtException', (err) => {
     process.exit(1);
 });
 
-// شروع بات (بدون تاخیر برای سرعت Render)
 client.initialize();
