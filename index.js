@@ -1,6 +1,34 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
-const puppeteer = require('puppeteer'); // اضافه شده برای پیدا کردن مسیر مرورگر
+const fs = require('fs');
+const path = require('path');
+
+// --- تابع هوشمند پیدا کردن کروم (حل مشکل نسخه) ---
+function findChromeExecutable() {
+    // مسیر پیش‌فرض کش در Render
+    const cacheRoot = '/opt/render/.cache/puppeteer/chrome';
+    
+    try {
+        if (fs.existsSync(cacheRoot)) {
+            // لیست نسخه‌های موجود
+            const versions = fs.readdirSync(cacheRoot);
+            if (versions.length > 0) {
+                // پیدا کردن آخرین نسخه
+                const latestVersion = versions[versions.length - 1];
+                // ساخت مسیر کامل فایل اجرایی
+                const execPath = path.join(cacheRoot, latestVersion, 'chrome-linux64', 'chrome');
+                
+                if (fs.existsSync(execPath)) {
+                    console.log(`✅ مرورگر کروم پیدا شد در: ${execPath}`);
+                    return execPath;
+                }
+            }
+        }
+    } catch (err) {
+        console.error('خطا در جستجوی کروم:', err.message);
+    }
+    return null;
+}
 
 // --- تنظیمات ---
 const CONFIG = {
@@ -23,10 +51,17 @@ const client = new Client({
             '--single-process', 
             '--disable-dev-shm-usage'
         ],
-        // این خط مهم است: مسیر مرورگر را خودکار پیدا می‌کند
-        executablePath: puppeteer.executablePath()
+        // استفاده از تابع پیدا کردن خودکار
+        executablePath: findChromeExecutable()
     }
 });
+
+// اگر مرورگر پیدا نشد، برنامه اصلاً اجرا نشود تا ارورهای عجیب ندهد
+if (!findChromeExecutable()) {
+    console.error('❌ خطای بحرانی: مرورگر کروم نصب نشده یا پیدا نشد.');
+    console.error('لطفا مطمئن شوید در package.json دستور postinstall وجود دارد.');
+    process.exit(1);
+}
 
 const userOffenses = {};
 const pendingJoins = [];
